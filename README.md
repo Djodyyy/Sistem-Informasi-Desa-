@@ -1,23 +1,26 @@
-# Website Sistem Informasi Desa Cibening Kabupaten Purwakarta
+# 🌐 Website Sistem Informasi Desa Cibening – Kabupaten Purwakarta
 
-Sistem informasi berbasis web untuk membantu pengelolaan data pemerintahan desa, termasuk:
-- Manajemen data penduduk
-- Informasi Statistik Data Penduduk
-- Transparansi anggaran
-- Berita & artikel
-- Struktur pemerintahan
-- Galeri kegiatan
+Sistem informasi berbasis web untuk membantu pengelolaan data pemerintahan Desa Cibening. Fitur-fitur utamanya dirancang untuk mendukung transparansi, efisiensi administrasi, dan akses publik terhadap informasi desa.
 
-## 🔧 Fitur Utama
+## 📌 Modul Utama
+- ✅ Manajemen data penduduk
+- 📊 Informasi statistik data penduduk
+- 💰 Transparansi anggaran desa
+- 📰 Berita & artikel desa
+- 🏛️ Struktur pemerintahan desa
+- 🖼️ Galeri kegiatan & dokumentasi
+
+## 🔧 Fitur Unggulan
 - Login multi-role: Admin, Kepala Desa, Warga
-- CRUD data penduduk, anggaran, dan berita
-- Upload dokumen & gambar
-- Tampilan responsive dengan Bootstrap
+- CRUD data: penduduk, anggaran, berita, galeri
+- Upload dokumen dan gambar (PDF, JPG)
+- Tampilan responsive dan user-friendly dengan Bootstrap 5
 
-## 💻 Teknologi
+## 💻 Teknologi yang Digunakan
 - PHP Native
 - TypeScript
-- Laragon
+- JavaScript
 - MySQL
 - Bootstrap 5
-- JavaScript
+- Laragon (sebagai environment)
+
