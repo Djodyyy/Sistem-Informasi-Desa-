@@ -139,6 +139,25 @@ $role = $role_names[$role_id] ?? 'unknown';
                                 <span>Informasi Pembangunan</span>
                             </a>
                         </li>
+                           <?php elseif ($role === 'kasi_pelayanan'): ?>
+                        <li class="side-nav-item">
+                            <a href="data_permohonan.php" class="side-nav-link">
+                                <i class="uil-file-info-alt"></i>
+                                <span> Data Permohonan </span>
+                            </a>
+                             <a href="kelola_surat.php" class="side-nav-link">
+                                <i class="uil-file-info-alt"></i>
+                                <span> Pengelolaan Surat </span>
+                            </a>
+                            <a href="data_pengaduan.php" class="side-nav-link">
+                                <i class="uil-file-info-alt"></i>
+                                <span> Data Pengaduan </span>
+                            </a>
+                             <a href="jadwal_pelayanan.php" class="side-nav-link">
+                                <i class="uil-file-info-alt"></i>
+                                <span> Jadwal Pelayanan </span>
+                            </a>
+                        </li>
                     <?php endif; ?>
                 </ul>
             </div>
