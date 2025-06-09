@@ -1,9 +1,4 @@
 <?php
-
-// panggil koneksi dan function user
-require_once 'functions/koneksi.php';
-require_once 'functions/function_user.php';
-
 // Dummy data jumlah total permohonan
 $totalPermohonan = 126;
 
