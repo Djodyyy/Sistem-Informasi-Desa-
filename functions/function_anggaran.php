@@ -98,7 +98,7 @@ function hapusAnggaran($id)
     $conn = dbConnect();
 
     // Ambil semua file dokumentasi untuk anggaran ini
-    $stmt = $conn->prepare("SELECT file_foto FROM tb_anggaran_dokumen WHERE id_anggaran = ?");
+    $stmt = $conn->prepare("SELECT file_foto FROM tb_anggaran_dokumentasi WHERE id_anggaran = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -113,7 +113,7 @@ function hapusAnggaran($id)
     }
 
     // Hapus data dokumentasi dari database
-    $stmt = $conn->prepare("DELETE FROM tb_anggaran_dokumen WHERE id_anggaran = ?");
+    $stmt = $conn->prepare("DELETE FROM tb_anggaran_dokumentasi WHERE id_anggaran = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
 
