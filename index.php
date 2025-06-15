@@ -351,6 +351,26 @@ function getAllGaleriKegiatan()
             <div class="card shadow-lg rounded-4 p-4" style="background: rgba(255,255,255,0.15); border: none;">
               <h5 class="card-title fw-bold mb-4">Diagram Komposisi Penduduk</h5>
               <canvas id="pendudukChart" style="max-width: 100%; height: 250px; max-height: 250px;"></canvas>
+
+              <!-- Keterangan Warna -->
+              <div class="mt-4 d-flex flex-wrap justify-content-center gap-2">
+                <div style="padding: 6px 12px; border-radius: 6px; background: linear-gradient(#667EEA, #764BA2); color: white; font-size: 0.9rem;">
+                  Laki-laki
+                </div>
+                <div style="padding: 6px 12px; border-radius: 6px; background: linear-gradient(#F783AC, #CC3A71); color: white; font-size: 0.9rem;">
+                  Perempuan
+                </div>
+                <div style="padding: 6px 12px; border-radius: 6px; background: linear-gradient(#FFD700, #FFA500); color: black; font-size: 0.9rem;">
+                  Ibu Hamil
+                </div>
+                <div style="padding: 6px 12px; border-radius: 6px; background: linear-gradient(#7ED6DF, #22A6B3); color: black; font-size: 0.9rem;">
+                  Lansia
+                </div>
+                <div style="padding: 6px 12px; border-radius: 6px; background: linear-gradient(#EAB543, #F19066); color: black; font-size: 0.9rem;">
+                  Balita
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -419,14 +439,7 @@ function getAllGaleriKegiatan()
                   cutout: '65%',
                   plugins: {
                     legend: {
-                      position: 'bottom',
-                      labels: {
-                        color: '#fff',
-                        font: {
-                          size: 14,
-                          weight: '600'
-                        }
-                      }
+                      display: false
                     },
                     tooltip: {
                       backgroundColor: 'rgba(0,0,0,0.7)',
@@ -437,7 +450,8 @@ function getAllGaleriKegiatan()
               });
             });
           </script>
-          <!-- End Data Statistik Penduduk -->
+
+
 
           <!-- Transparansi Anggaran Section -->
           <section id="transparansi" class="section bg-light">
