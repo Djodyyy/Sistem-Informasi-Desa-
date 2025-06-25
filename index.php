@@ -154,7 +154,7 @@ function getAllGaleriKegiatan()
           <li class="dropdown"><a href="#"><span>Login</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
             <ul>
               <li><a href="login_pegawai.php">Login Pegawai</a></li>
-              <li><a href="perbaikan.html">Login Warga</a></li>
+              <li><a href="login_warga.php">Login Warga</a></li>
             </ul>
           </li>
         </ul>
