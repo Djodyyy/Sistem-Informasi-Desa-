@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,6 @@
     <link rel="shortcut icon" href="assets/img/logo/logo_tab.png">
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
@@ -24,14 +23,13 @@
             flex: 1;
         }
 
-        /* Warna hijau #009961 untuk tombol dan footer */
         .btn-primary {
             background-color: #009961;
             border-color: #009961;
         }
 
         .btn-primary:hover {
-            background-color: #007f4e; /* Warna hijau lebih gelap saat hover */
+            background-color: #007f4e;
             border-color: #007f4e;
         }
 
@@ -51,18 +49,27 @@
             <div class="container">
                 <div class="row d-flex justify-content-center align-items-center">
                     <div class="col-md-9 col-lg-6 col-xl-5 d-flex align-items-start justify-content-start">
-                        <img src="assets/img/logo/logo_login.png" alt="Logo Desa"
-                            style="max-width: 800px; height: auto; margin-top: -70px; margin-left: -20px;">
+                        <a href="index.php">
+                            <img src="assets/img/logo/logo_login.png" alt="Logo Desa"
+                                style="max-width: 800px; height: auto; margin-top: -70px; margin-left: -20px;">
+                        </a>
                     </div>
                     <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
 
-                        <form method="POST" action="{{ route('login') }}">
+                        <?php if (isset($_GET['error'])): ?>
+                            <div class="alert alert-danger"><?= htmlspecialchars($_GET['error']) ?></div>
+                        <?php elseif (isset($_GET['success'])): ?>
+                            <div class="alert alert-success"><?= htmlspecialchars($_GET['success']) ?></div>
+                        <?php endif; ?>
 
-                            <!-- Email / NIK -->
+                        <form action="functions/login_check_warga.php" method="POST">
+
+
+                            <!-- NIK -->
                             <div class="form-outline mb-4">
-                                <input type="text" name="login" class="form-control form-control-lg"
-                                    placeholder="Email atau NIK" required />
-                                <label class="form-label">Email atau NIK</label>
+                                <input type="text" name="nik" class="form-control form-control-lg"
+                                    placeholder="Masukan NIK" required />
+                                <label class="form-label">Nomor Induk Kependudukan</label>
                             </div>
 
                             <!-- Password -->
@@ -72,7 +79,7 @@
                                 <label class="form-label">Password</label>
                             </div>
 
-                            <!-- Remember me & Lupa Password -->
+                            <!-- Remember me -->
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div class="form-check">
                                     <input class="form-check-input me-2" type="checkbox" name="remember"
@@ -87,9 +94,9 @@
                                 <button type="submit" class="btn btn-primary btn-lg px-5">Login</button>
                                 <p class="small fw-bold mt-2 pt-1 mb-0">
                                     Belum punya akun?
-                                    <a href="{{ route('register-warga') }}" class="link-danger">Register</a>
+                                    <a href="register_warga.php" class="link-danger">Register</a>
                                 </p>
-                                <a href="index.html" class="btn btn-link text-body ms-3 btn-lg">Kembali ke Halaman Utama</a>
+                                <a href="index.php" class="btn btn-link text-body ms-3 btn-lg">Kembali ke Halaman Utama</a>
                             </div>
                         </form>
 
@@ -99,7 +106,6 @@
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="text-white text-center py-3">
         Copyright © 2025 Sistem Informasi Desa Cibening
     </footer>
