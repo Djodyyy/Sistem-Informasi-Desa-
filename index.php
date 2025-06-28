@@ -154,7 +154,7 @@ function getAllGaleriKegiatan()
           <li class="dropdown"><a href="#"><span>Login</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
             <ul>
               <li><a href="login_pegawai.php">Login Pegawai</a></li>
-              <li><a href="login_warga.php">Login Warga</a></li>
+              <li><a href="perbaikan.html">Login Warga</a></li>
             </ul>
           </li>
         </ul>
@@ -173,9 +173,6 @@ function getAllGaleriKegiatan()
       <div class="container d-flex flex-column align-items-center text-center">
         <h2 data-aos="fade-up" data-aos-delay="100">Sistem Informasi</h2>
         <p data-aos="fade-up" data-aos-delay="200">Desa Cibening</p>
-        <div data-aos="fade-up" data-aos-delay="300">
-          <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox pulsating-play-btn"></a>
-        </div>
       </div>
     </section><!-- /Hero Section -->
 
@@ -209,7 +206,6 @@ function getAllGaleriKegiatan()
           color: #6c757d;
         }
 
-        /* Fallback grid untuk layar kecil */
         @media (max-width: 768px) {
           #aparaturCarousel {
             display: none;
@@ -235,12 +231,21 @@ function getAllGaleriKegiatan()
 
       <div class="container section-title text-center mb-5" data-aos="fade-up">
         <h2 class="fw-bold">Struktur Aparatur Desa Cibening</h2>
-        <p class="text-muted">Berikut adalah susunan aparatur yang menjalankan pemerintahan desa cibening</p>
+        <p class="text-muted">Berikut adalah susunan aparatur yang menjalankan pemerintahan desa Cibening</p>
       </div>
 
-      <!-- Carousel untuk desktop -->
+      <?php
+      // Prioritaskan "Kepala Desa" tampil dulu
+      usort($slides, function ($a, $b) {
+        if ($a['jabatan'] === 'Kepala Desa') return -1;
+        if ($b['jabatan'] === 'Kepala Desa') return 1;
+        return 0;
+      });
+      ?>
+
+      <!-- Carousel -->
       <div class="container d-none d-md-block" data-aos="fade-up" data-aos-delay="100">
-        <div id="aparaturCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+        <div id="aparaturCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000">
           <div class="carousel-inner">
 
             <?php foreach ($slides as $index => $slide): ?>
@@ -261,7 +266,7 @@ function getAllGaleriKegiatan()
 
           </div>
 
-          <!-- Controls -->
+          <!-- Navigasi -->
           <button class="carousel-control-prev" type="button" data-bs-target="#aparaturCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon bg-dark rounded-circle" aria-hidden="true"></span>
             <span class="visually-hidden">Previous</span>
@@ -273,7 +278,7 @@ function getAllGaleriKegiatan()
         </div>
       </div>
 
-      <!-- Grid fallback untuk mobile -->
+      <!-- Grid Mobile -->
       <div class="container d-md-none" data-aos="fade-up" data-aos-delay="100">
         <div class="struktur-grid">
           <?php foreach ($slides as $slide): ?>
@@ -290,6 +295,8 @@ function getAllGaleriKegiatan()
         </div>
       </div>
     </section>
+
+
 
     <!--section statistik penduduk-->
     <section id="statistik-penduduk" class="statistik-penduduk section bg-gradient" style="padding: 60px 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;">
@@ -680,13 +687,6 @@ function getAllGaleriKegiatan()
           <section id="berita" class="berita section">
             <div class="container">
               <div class="row gy-4">
-
-                <!-- Gambar Banner atau Ilustrasi -->
-                <div class="berita-image col-lg-6 order-lg-2" data-aos="fade-up" data-aos-delay="100">
-                  <img src="assets/img/news-banner.jpg" alt="Berita & Artikel" class="img-fluid rounded shadow">
-                  <!-- Jika belum punya gambarnya, pakai placeholder ini:
-        <img src="https://via.placeholder.com/900x600?text=Banner+Berita" alt="Berita & Artikel" class="img-fluid rounded shadow"> -->
-                </div>
 
                 <!-- Daftar Berita & Artikel -->
                 <div class="col-lg-6 order-lg-1">

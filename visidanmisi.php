@@ -2,7 +2,7 @@
 require_once 'functions/koneksi.php';
 $conn = dbConnect();
 
-// Ambil konten 'Visi dan Misi'
+// Ambil konten Visi dan Misi
 $query = "SELECT content FROM tb_konten WHERE title = 'Visi dan Misi' LIMIT 1";
 $result = $conn->query($query);
 $visi_misi = '';
@@ -39,25 +39,26 @@ if ($result && $result->num_rows > 0) {
   <link href="assets/css/main.css" rel="stylesheet">
 
   <style>
-    .header {
-      z-index: 9999;
-    }
-
-    section.section {
-      scroll-margin-top: 100px;
+    section#visimisi {
+      padding: 60px 0;
+      background-color: #f8f9fa;
     }
 
     .section-title img {
       height: 60px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .judul-wrapper {
+      text-align: center;
     }
 
     .judul-wrapper h2 {
-      margin-top: 10px;
-      margin-bottom: 20px;
+      font-weight: 700;
+      color: #2c3e50;
       position: relative;
       display: inline-block;
-      padding-bottom: 10px;
+      margin-bottom: 10px;
     }
 
     .judul-wrapper h2::after {
@@ -70,29 +71,48 @@ if ($result && $result->num_rows > 0) {
       border-radius: 2px;
     }
 
-    .content {
+    .visi-box {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      padding: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .visi-box:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+    }
+
+    .content p {
       font-size: 1.05rem;
-      line-height: 1.7;
+      line-height: 1.8;
       text-align: justify;
     }
 
-    section#visimisi {
-      padding-top: 30px;
-      padding-bottom: 40px;
+    .btn-kembali {
+      margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .visi-box {
+        padding: 20px;
+      }
     }
   </style>
 </head>
 
 <body class="index-page">
+
   <!-- Main -->
   <main class="main">
 
-    <!-- Visi dan Misi -->
-    <section id="visimisi" class="about section">
+    <!-- Section Visi dan Misi -->
+    <section id="visimisi" class="section">
       <div class="container" data-aos="fade-up">
 
-        <!-- Logo + Judul -->
-        <div class="section-title text-center">
+        <!-- Judul -->
+        <div class="section-title text-center mb-4">
           <a href="index.php">
             <img src="assets/img/logo/logo_home.png" alt="Logo Desa Cibening">
           </a>
@@ -103,13 +123,15 @@ if ($result && $result->num_rows > 0) {
 
         <!-- Konten -->
         <div class="row justify-content-center">
-          <div class="col-lg-10 content" data-aos="fade-up" data-aos-delay="100">
-            <?= nl2br($visi_misi); ?>
+          <div class="col-lg-10">
+            <div class="visi-box content" data-aos="fade-up" data-aos-delay="100">
+              <?= nl2br($visi_misi); ?>
+            </div>
           </div>
         </div>
 
-        <!-- Tombol Kembali -->
-        <div class="text-center mt-4">
+        <!-- Tombol kembali -->
+        <div class="text-center btn-kembali">
           <a href="index.php" class="btn btn-secondary">
             <i class="bi bi-arrow-left-circle"></i> Kembali
           </a>
@@ -121,7 +143,7 @@ if ($result && $result->num_rows > 0) {
     <footer id="footer" class="footer dark-background">
       <div class="container text-center">
         <div class="header-with-logo d-flex align-items-center justify-content-center mb-3">
-          <img src="assets/img/logo/logo_home.png" alt="Logo Desa Cibening" width="40" height="40" style="object-fit: contain;">
+          <img src="assets/img/logo/logo_home.png" alt="Logo Desa Cibening" width="40" height="40">
           <h3 class="sitename ms-3 mb-0">Sistem Informasi Desa Cibening</h3>
         </div>
         <div class="social-links d-flex justify-content-center mb-3">
@@ -130,11 +152,9 @@ if ($result && $result->num_rows > 0) {
           <a href="https://www.instagram.com/pemdes_cibening_berprestasi?igsh=MW5qdmJ3Y2Vyc3VpOQ=="><i class="bi bi-instagram"></i></a>
           <a href="#"><i class="bi bi-whatsapp"></i></a>
         </div>
-
         <div class="copyright">
-          <span>&copy;</span> <strong class="px-1 sitename">Djody Rizaldi</strong> <span>All Rights Reserved</span>
+          &copy; <strong class="px-1 sitename">Djody Rizaldi</strong> All Rights Reserved
         </div>
-
         <div class="credits">
           Designed by <a href="#">Djody Rizaldi</a>
         </div>
@@ -161,6 +181,7 @@ if ($result && $result->num_rows > 0) {
 
     <!-- Main JS -->
     <script src="assets/js/main.js"></script>
+
 </body>
 
 </html>
