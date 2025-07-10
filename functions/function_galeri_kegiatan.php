@@ -1,128 +1,170 @@
 <?php
-require_once "koneksi.php";
+require_once 'koneksi.php';
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Ambil semua data galeri & kegiatan
-function getGaleriKegiatan() {
+// =========================
+// Get Semua Kegiatan + Foto
+// =========================
+function getAllKegiatan()
+{
     $conn = dbConnect();
-    $sql = "SELECT * FROM tb_galeri_kegiatan ORDER BY tanggal_kegiatan DESC";
-    return mysqli_query($conn, $sql);
+    $query = "
+        SELECT 
+            k.id,
+            k.judul,
+            k.deskripsi,
+            k.tanggal_kegiatan,
+            k.tanggal_upload,
+            GROUP_CONCAT(g.file_gambar) AS file_gambar
+        FROM tb_kegiatan k
+        LEFT JOIN tb_kegiatan_gambar g ON k.id = g.kegiatan_id
+        GROUP BY k.id
+        ORDER BY k.tanggal_kegiatan DESC
+    ";
+
+    $result = $conn->query($query);
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        $row['file_gambar'] = !empty($row['file_gambar']) ? explode(',', $row['file_gambar']) : [];
+        $data[] = $row;
+    }
+
+    return $data;
 }
 
-// Tambah data baru galeri & kegiatan
-function tambahGaleriKegiatan($data, $file) {
+// ==========================
+// Tambah Kegiatan + Upload Gambar
+// ==========================
+function tambahKegiatan($data, $files)
+{
     $conn = dbConnect();
+
     $judul = htmlspecialchars($data['judul']);
     $deskripsi = htmlspecialchars($data['deskripsi']);
-    $tanggal_kegiatan = htmlspecialchars($data['tanggal']);
+    $tanggal_kegiatan = $data['tanggal'];
     $tanggal_upload = date('Y-m-d');
 
-    $file_gambar = uploadFileGaleri($file);
-    if (!$file_gambar) return false;
+    $stmt = $conn->prepare("INSERT INTO tb_kegiatan (judul, deskripsi, tanggal_kegiatan, tanggal_upload) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $judul, $deskripsi, $tanggal_kegiatan, $tanggal_upload);
 
-    $sql = "INSERT INTO tb_galeri_kegiatan (judul, deskripsi, file_gambar, tanggal_kegiatan, tanggal_upload)
-            VALUES ('$judul', '$deskripsi', '$file_gambar', '$tanggal_kegiatan', '$tanggal_upload')";
-    return mysqli_query($conn, $sql);
-}
+    if ($stmt->execute()) {
+        $kegiatan_id = $stmt->insert_id;
 
-// Fungsi upload gambar galeri
-function uploadFileGaleri($file) {
-    $namaFile = $file['name'];
-    $tmpName = $file['tmp_name'];
-    $ext = strtolower(pathinfo($namaFile, PATHINFO_EXTENSION));
-    $allowedExt = ['jpg', 'jpeg', 'png', 'gif'];
+        if (!empty($files['name'][0])) {
+            uploadMultipleKegiatanGambar($files, $kegiatan_id);
+        }
 
-    if (!in_array($ext, $allowedExt)) {
-        return false;
+        return true;
     }
 
-    $namaBaru = uniqid('galeri_', true) . '.' . $ext;
-    $tujuan = '../uploads/galeri/' . $namaBaru;
-
-    if (move_uploaded_file($tmpName, $tujuan)) {
-        return $namaBaru;
-    }
     return false;
 }
 
-// Hapus data galeri
-function hapusGaleriKegiatan($id) {
+// ====================================
+// Upload Banyak Gambar ke tb_kegiatan_gambar
+// ====================================
+function uploadMultipleKegiatanGambar($files, $kegiatan_id)
+{
     $conn = dbConnect();
-    $data = mysqli_fetch_assoc(mysqli_query($conn, "SELECT file_gambar FROM tb_galeri_kegiatan WHERE id = $id"));
-    if ($data) {
-        $filePath = '../uploads/galeri/' . $data['file_gambar'];
-        if (file_exists($filePath)) {
-            unlink($filePath);
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    $uploadDir = '../uploads/galeri/';
+
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    for ($i = 0; $i < count($files['name']); $i++) {
+        if ($files['error'][$i] === 0 && in_array($files['type'][$i], $allowedTypes)) {
+            $ext = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+            $fileName = 'kegiatan_' . time() . '_' . $i . '.' . $ext;
+            $targetFile = $uploadDir . $fileName;
+
+            if (move_uploaded_file($files['tmp_name'][$i], $targetFile)) {
+                $stmt = $conn->prepare("INSERT INTO tb_kegiatan_gambar (kegiatan_id, file_gambar, uploaded_at) VALUES (?, ?, NOW())");
+                $stmt->bind_param("is", $kegiatan_id, $fileName);
+                $stmt->execute();
+                $stmt->close();
+            }
         }
     }
-    return mysqli_query($conn, "DELETE FROM tb_galeri_kegiatan WHERE id = $id");
 }
 
-// Ambil satu data untuk edit
-function getGaleriKegiatanById($id) {
+// ==========================
+// Hapus Kegiatan + Semua Gambar
+// ==========================
+function hapusKegiatan($id)
+{
     $conn = dbConnect();
-    return mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM tb_galeri_kegiatan WHERE id = $id"));
-}
 
-// Update data galeri
-function updateGaleriKegiatan($id, $data, $file = null) {
-    $conn = dbConnect();
-    $judul = htmlspecialchars($data['judul']);
-    $deskripsi = htmlspecialchars($data['deskripsi']);
-    $tanggal_kegiatan = htmlspecialchars($data['tanggal']);
+    // Ambil semua nama file dulu
+    $stmt = $conn->prepare("SELECT file_gambar FROM tb_kegiatan_gambar WHERE kegiatan_id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    if ($file && $file['name'] != '') {
-        $gambarBaru = uploadFileGaleri($file);
-        if (!$gambarBaru) return false;
-
-        $lama = getGaleriKegiatanById($id);
-        if ($lama && file_exists('../uploads/galeri/' . $lama['file_gambar'])) {
-            unlink('../uploads/galeri/' . $lama['file_gambar']);
+    while ($row = $result->fetch_assoc()) {
+        $file = '../uploads/galeri/' . $row['file_gambar'];
+        if (file_exists($file)) {
+            unlink($file);
         }
-
-        $sql = "UPDATE tb_galeri_kegiatan SET 
-                judul = '$judul',
-                deskripsi = '$deskripsi',
-                file_gambar = '$gambarBaru',
-                tanggal_kegiatan = '$tanggal_kegiatan'
-                WHERE id = $id";
-    } else {
-        $sql = "UPDATE tb_galeri_kegiatan SET 
-                judul = '$judul',
-                deskripsi = '$deskripsi',
-                tanggal_kegiatan = '$tanggal_kegiatan'
-                WHERE id = $id";
     }
 
-    return mysqli_query($conn, $sql);
+    // Hapus gambar
+    $stmt = $conn->prepare("DELETE FROM tb_kegiatan_gambar WHERE kegiatan_id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+
+    // Hapus kegiatan
+    $stmt = $conn->prepare("DELETE FROM tb_kegiatan WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    return $stmt->execute();
 }
 
-// Proses Form Tambah / Edit / Hapus
-if (isset($_POST['add_galeri'])) {
-    if (tambahGaleriKegiatan($_POST, $_FILES['gambar'])) {
-        header("Location: ../tambah_galeri_kegiatan.php?success");
-    } else {
-        header("Location: ../tambah_galeri_kegiatan.php?error");
+// ===================
+// Handle Request POST
+// ===================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['add_kegiatan'])) {
+        if (tambahKegiatan($_POST, $_FILES['gambar'] ?? [])) {
+            header("Location: ../tambah_galeri_kegiatan.php?success=1");
+        } else {
+            header("Location: ../tambah_galeri_kegiatan.php?error=1");
+        }
+        exit;
     }
-    exit;
-}
 
-if (isset($_POST['edit_galeri'])) {
-    $id = $_POST['id_galeri'];
-    if (updateGaleriKegiatan($id, $_POST, $_FILES['gambar'])) {
-        header("Location: ../tambah_galeri_kegiatan.php?updated");
-    } else {
-        header("Location: ../tambah_galeri_kegiatan.php?error");
+    if (isset($_POST['edit_kegiatan'])) {
+        $conn = dbConnect(); 
+        $id = intval($_POST['id'] ?? 0);
+        $judul = htmlspecialchars($_POST['judul'] ?? '');
+        $deskripsi = htmlspecialchars($_POST['deskripsi'] ?? '');
+        $tanggal = $_POST['tanggal'] ?? '';
+
+        $stmt = $conn->prepare("UPDATE tb_kegiatan SET judul = ?, deskripsi = ?, tanggal_kegiatan = ? WHERE id = ?");
+        $stmt->bind_param("sssi", $judul, $deskripsi, $tanggal, $id);
+
+        if ($stmt->execute()) {
+            if (!empty($_FILES['gambar']['name'][0])) {
+                uploadMultipleKegiatanGambar($_FILES['gambar'], $id);
+            }
+            header("Location: ../tambah_galeri_kegiatan.php?updated=1");
+        } else {
+            header("Location: ../tambah_galeri_kegiatan.php?error=1");
+        }
+        exit;
     }
-    exit;
 }
 
+// ===================
+// Handle Request GET
+// ===================
 if (isset($_GET['hapus'])) {
-    $id = $_GET['hapus'];
-    if (hapusGaleriKegiatan($id)) {
-        header("Location: ../tambah_galeri_kegiatan.php?deleted");
+    $id = intval($_GET['hapus']);
+    if (hapusKegiatan($id)) {
+        header("Location: ../tambah_galeri_kegiatan.php?deleted=1");
     } else {
-        header("Location: ../tambah_galeri_kegiatan.php?error");
+        header("Location: ../tambah_galeri_kegiatan.php?error=1");
     }
     exit;
 }
-?>

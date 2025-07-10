@@ -1,10 +1,13 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-include_once 'partials/header.php';
+
 include_once 'functions/function_galeri_kegiatan.php';
-$list = getGaleriKegiatan();
+$dataKegiatan = getAllKegiatan();
 ?>
+
+<?php include 'partials/header.php'; ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 <div class="container py-4">
   <h4 class="text-center mb-4">Kelola Galeri & Kegiatan</h4>
@@ -16,122 +19,127 @@ $list = getGaleriKegiatan();
   <?php elseif (isset($_GET['deleted'])): ?>
     <div class="alert alert-warning">Data berhasil dihapus.</div>
   <?php elseif (isset($_GET['error'])): ?>
-    <div class="alert alert-danger">Terjadi kesalahan. Silakan coba lagi.</div>
+    <div class="alert alert-danger">Terjadi kesalahan. Coba lagi.</div>
   <?php endif; ?>
 
+  <!-- Form Tambah -->
   <div class="card mb-4 shadow-sm">
-    <div class="card-header bg-primary text-white">Tambah Galeri / Kegiatan Baru</div>
+    <div class="card-header bg-primary text-white">Tambah Kegiatan</div>
     <div class="card-body">
-      <form action="functions/function_galeri_kegiatan.php" method="POST" enctype="multipart/form-data">
+      <form method="POST" action="functions/function_galeri_kegiatan.php" enctype="multipart/form-data">
         <div class="mb-3">
           <label for="judul" class="form-label">Judul</label>
-          <input type="text" class="form-control" id="judul" name="judul" required>
+          <input type="text" name="judul" class="form-control" required>
         </div>
         <div class="mb-3">
           <label for="deskripsi" class="form-label">Deskripsi</label>
-          <textarea class="form-control" id="deskripsi" name="deskripsi" rows="4" required></textarea>
+          <textarea name="deskripsi" class="form-control" rows="3" required></textarea>
         </div>
         <div class="mb-3">
-          <label for="tanggal" class="form-label">Tanggal</label>
-          <input type="date" class="form-control" id="tanggal" name="tanggal" value="<?= date('Y-m-d') ?>" required>
+          <label for="tanggal" class="form-label">Tanggal Kegiatan</label>
+          <input type="text" id="tanggal" name="tanggal" class="form-control" required>
         </div>
         <div class="mb-3">
-          <label for="gambar" class="form-label">Upload Gambar</label>
-          <input type="file" class="form-control" id="gambar" name="gambar" accept="image/*" required>
+          <label for="gambar" class="form-label">Upload Gambar (bisa lebih dari satu)</label>
+          <input type="file" name="gambar[]" class="form-control" multiple accept="image/*">
         </div>
         <div class="text-end">
-          <button type="submit" name="add_galeri" class="btn btn-success">Tambah</button>
+          <button type="submit" name="add_kegiatan" class="btn btn-success">Tambah</button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- Tabel Data -->
   <div class="card shadow-sm">
-    <div class="card-header bg-secondary text-white">Daftar Galeri & Kegiatan</div>
+    <div class="card-header bg-secondary text-white">Daftar Kegiatan</div>
     <div class="card-body table-responsive">
-      <table class="table table-striped table-hover align-middle">
+      <table class="table table-striped table-hover align-middle" style="font-size: 14px;">
         <thead class="table-dark">
           <tr>
             <th>No</th>
             <th>Judul</th>
             <th>Tanggal</th>
+            <th>Deskripsi</th>
             <th>Gambar</th>
             <th>Aksi</th>
           </tr>
         </thead>
         <tbody>
-          <?php
-          if ($list && mysqli_num_rows($list) > 0) {
-            $no = 1;
-            while ($item = mysqli_fetch_assoc($list)) {
-              ?>
+          <?php if (!empty($dataKegiatan)): ?>
+            <?php $no = 1; foreach ($dataKegiatan as $row): ?>
               <tr>
                 <td><?= $no++ ?></td>
-                <td><?= htmlspecialchars($item['judul']) ?></td>
-                <td><?= date('d M Y', strtotime($item['tanggal_kegiatan'])) ?></td>
+                <td><?= htmlspecialchars($row['judul']) ?></td>
+                <td><?= htmlspecialchars($row['tanggal_kegiatan']) ?></td>
+                <td><?= htmlspecialchars($row['deskripsi']) ?></td>
                 <td>
-                  <?php if (!empty($item['file_gambar'])): ?>
-                    <img src="uploads/galeri/<?= htmlspecialchars($item['file_gambar']) ?>" style="width:100px;">
+                  <?php if (!empty($row['file_gambar'])): ?>
+                    <?php foreach ($row['file_gambar'] as $foto): ?>
+                      <a href="uploads/galeri/<?= htmlspecialchars($foto) ?>" target="_blank">📷</a>
+                    <?php endforeach; ?>
                   <?php else: ?>
-                    -
+                    <span class="text-muted">Tidak ada</span>
                   <?php endif; ?>
                 </td>
                 <td>
-                  <a href="#editGaleriModal<?= $item['id'] ?>" class="btn btn-sm btn-primary" data-bs-toggle="modal">Edit</a>
-                  <a href="functions/function_galeri_kegiatan.php?hapus=<?= $item['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus data ini?')">Hapus</a>
+                  <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal<?= $row['id'] ?>">Edit</button>
+                  <a href="functions/function_galeri_kegiatan.php?hapus=<?= $row['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus kegiatan ini?')">Hapus</a>
                 </td>
               </tr>
 
               <!-- Modal Edit -->
-              <div class="modal fade" id="editGaleriModal<?= $item['id'] ?>" tabindex="-1">
+              <div class="modal fade" id="editModal<?= $row['id'] ?>" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog">
                   <div class="modal-content">
                     <form action="functions/function_galeri_kegiatan.php" method="POST" enctype="multipart/form-data">
+                      <input type="hidden" name="id" value="<?= $row['id'] ?>">
                       <div class="modal-header">
-                        <h5 class="modal-title">Edit Galeri / Kegiatan</h5>
+                        <h5 class="modal-title">Edit Kegiatan</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                       </div>
                       <div class="modal-body">
-                        <input type="hidden" name="id_galeri" value="<?= $item['id'] ?>">
                         <div class="mb-3">
                           <label class="form-label">Judul</label>
-                          <input type="text" name="judul" class="form-control" value="<?= htmlspecialchars($item['judul']) ?>" required>
+                          <input type="text" name="judul" class="form-control" value="<?= htmlspecialchars($row['judul']) ?>" required>
                         </div>
                         <div class="mb-3">
                           <label class="form-label">Deskripsi</label>
-                          <textarea name="deskripsi" class="form-control" rows="4" required><?= htmlspecialchars($item['deskripsi']) ?></textarea>
+                          <textarea name="deskripsi" class="form-control" required><?= htmlspecialchars($row['deskripsi']) ?></textarea>
                         </div>
                         <div class="mb-3">
-                          <label class="form-label">Tanggal</label>
-                          <input type="date" name="tanggal" class="form-control" value="<?= $item['tanggal_kegiatan'] ?>" required>
+                          <label class="form-label">Tanggal Kegiatan</label>
+                          <input type="text" name="tanggal" class="form-control" value="<?= htmlspecialchars($row['tanggal_kegiatan']) ?>" required>
                         </div>
                         <div class="mb-3">
-                          <label class="form-label">Gambar Saat Ini</label><br>
-                          <img src="uploads/galeri/<?= htmlspecialchars($item['file_gambar']) ?>" style="width:100px;">
-                        </div>
-                        <div class="mb-3">
-                          <label class="form-label">Ganti Gambar (opsional)</label>
-                          <input type="file" name="gambar" class="form-control" accept="image/*">
+                          <label class="form-label">Tambah Gambar Baru (opsional)</label>
+                          <input type="file" name="gambar[]" class="form-control" multiple accept="image/*">
                         </div>
                       </div>
                       <div class="modal-footer">
-                        <button type="submit" name="edit_galeri" class="btn btn-primary">Simpan</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" name="edit_kegiatan" class="btn btn-primary">Update</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                       </div>
                     </form>
                   </div>
                 </div>
               </div>
-              <?php
-            }
-          } else {
-            echo "<tr><td colspan='5' class='text-center'>Belum ada data.</td></tr>";
-          }
-          ?>
+
+            <?php endforeach; ?>
+          <?php else: ?>
+            <tr><td colspan="6" class="text-center">Belum ada data kegiatan.</td></tr>
+          <?php endif; ?>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
-<?php include_once 'partials/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  flatpickr("#tanggal", {
+    dateFormat: "Y-m-d"
+  });
+</script>
+
+<?php include 'partials/footer.php'; ?>

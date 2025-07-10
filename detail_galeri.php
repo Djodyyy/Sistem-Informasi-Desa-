@@ -2,32 +2,40 @@
 require_once 'functions/koneksi.php';
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-  echo "ID galeri tidak valid.";
+  echo "ID kegiatan tidak valid.";
   exit;
 }
 
-$id = $_GET['id'];
+$id = (int)$_GET['id'];
 $conn = dbConnect();
 
-$stmt = $conn->prepare("SELECT * FROM tb_galeri_kegiatan WHERE id = ?");
+// Ambil data kegiatan
+$stmt = $conn->prepare("SELECT * FROM tb_kegiatan WHERE id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $result = $stmt->get_result();
-$galeri = $result->fetch_assoc();
+$kegiatan = $result->fetch_assoc();
 
-if (!$galeri) {
-  echo "Galeri tidak ditemukan.";
+if (!$kegiatan) {
+  echo "Kegiatan tidak ditemukan.";
   exit;
 }
 
-$judul = htmlspecialchars($galeri['judul']);
-$tanggal = date('d M Y', strtotime($galeri['tanggal_kegiatan']));
-
-// ✅ Perbaikan PATH sesuai folder upload
-$gambar = !empty($galeri['file_gambar']) ? "uploads/galeri/{$galeri['file_gambar']}" : "assets/img/default-galeri.jpg";
-
-$deskripsi = nl2br(htmlspecialchars($galeri['deskripsi']));
+$judul     = htmlspecialchars($kegiatan['judul']);
+$tanggal   = date('d M Y', strtotime($kegiatan['tanggal_kegiatan']));
+$deskripsi = nl2br(htmlspecialchars($kegiatan['deskripsi']));
 $currentUrl = (isset($_SERVER['HTTPS']) ? "https://" : "http://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+// Ambil gambar dokumentasi
+$gambarStmt = $conn->prepare("SELECT file_gambar FROM tb_kegiatan_gambar WHERE kegiatan_id = ?");
+$gambarStmt->bind_param("i", $id);
+$gambarStmt->execute();
+$gambarResult = $gambarStmt->get_result();
+
+$gambarList = [];
+while ($row = $gambarResult->fetch_assoc()) {
+  $gambarList[] = $row['file_gambar'];
+}
 ?>
 
 <!DOCTYPE html>
@@ -54,10 +62,9 @@ $currentUrl = (isset($_SERVER['HTTPS']) ? "https://" : "http://") . $_SERVER['HT
       margin-bottom: 60px;
     }
     .galeri-img {
-      width: 100%;
-      height: auto;
+      max-height: 500px;
+      object-fit: contain;
       border-radius: 10px;
-      margin-bottom: 25px;
     }
     .galeri-deskripsi {
       font-size: 1.05rem;
@@ -69,6 +76,13 @@ $currentUrl = (isset($_SERVER['HTTPS']) ? "https://" : "http://") . $_SERVER['HT
     .back-btn {
       display: inline-block;
       margin-top: 30px;
+    }
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
     }
     @media (max-width: 576px) {
       .galeri-wrapper {
@@ -85,7 +99,33 @@ $currentUrl = (isset($_SERVER['HTTPS']) ? "https://" : "http://") . $_SERVER['HT
 <div class="container galeri-wrapper">
   <h1 class="mb-2"><?= $judul ?></h1>
   <p class="text-muted mb-4">Tanggal Kegiatan: <?= $tanggal ?></p>
-  <img src="<?= $gambar ?>" alt="<?= $judul ?>" class="galeri-img">
+
+  <?php if (!empty($gambarList)): ?>
+    <div id="carouselGaleri" class="carousel slide mb-4" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        <?php foreach ($gambarList as $index => $gambar): ?>
+          <div class="carousel-item <?= $index === 0 ? 'active' : '' ?>">
+            <img src="uploads/galeri/<?= htmlspecialchars($gambar) ?>" class="d-block w-100 galeri-img" alt="Foto kegiatan <?= $index + 1 ?>">
+          </div>
+        <?php endforeach; ?>
+      </div>
+
+      <!-- Panah Kiri -->
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselGaleri" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Sebelumnya</span>
+      </button>
+
+      <!-- Panah Kanan -->
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselGaleri" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Berikutnya</span>
+      </button>
+    </div>
+  <?php else: ?>
+    <img src="assets/img/default-galeri.jpg" alt="Galeri Kosong" class="galeri-img mb-4">
+  <?php endif; ?>
+
   <div class="galeri-deskripsi mb-4">
     <?= $deskripsi ?>
   </div>
@@ -100,5 +140,6 @@ $currentUrl = (isset($_SERVER['HTTPS']) ? "https://" : "http://") . $_SERVER['HT
   <a href="index.php#galeri-kegiatan" class="btn btn-outline-secondary back-btn">← Kembali ke Galeri</a>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

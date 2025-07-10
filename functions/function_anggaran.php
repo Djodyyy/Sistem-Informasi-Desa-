@@ -1,6 +1,12 @@
 <?php
 require_once 'koneksi.php';
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// =====================
+// Handle Hapus Anggaran
+// =====================
 if (isset($_GET['hapus'])) {
     $id = intval($_GET['hapus']);
     if (hapusAnggaran($id)) {
@@ -11,40 +17,97 @@ if (isset($_GET['hapus'])) {
     exit;
 }
 
-
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
+// ======================
+// Get All Anggaran + Foto
+// ======================
 function getAllAnggaran()
 {
     $conn = dbConnect();
-    $query = "SELECT * FROM tb_anggaran ORDER BY tahun DESC, id_anggaran DESC";
+    $query = "
+        SELECT 
+            a.id_anggaran,
+            a.deskripsi,
+            a.bulan,
+            a.anggaran,
+            a.realisasi,
+            a.keterangan,
+            GROUP_CONCAT(d.file_foto SEPARATOR ',') AS file_foto
+        FROM tb_anggaran a
+        LEFT JOIN tb_anggaran_dokumentasi d ON a.id_anggaran = d.id_anggaran
+        GROUP BY a.id_anggaran
+        ORDER BY STR_TO_DATE(
+            TRIM(SUBSTRING_INDEX(a.bulan, 's/d', 1)), 
+            '%M %Y'
+        ) ASC
+    ";
+
     $result = $conn->query($query);
 
     $data = [];
     while ($row = $result->fetch_assoc()) {
-        $row['dokumentasi'] = getDokumentasiByAnggaran($conn, $row['id_anggaran']);
+        $row['file_foto'] = !empty($row['file_foto']) ? explode(',', $row['file_foto']) : [];
         $data[] = $row;
     }
+
     return $data;
 }
 
-function getDokumentasiByAnggaran($conn, $id_anggaran)
+
+
+
+// =====================
+// Tambah Anggaran
+// =====================
+function tambahAnggaran($data, $files)
 {
-    $query = "SELECT * FROM tb_anggaran_dokumentasi WHERE id_anggaran = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $id_anggaran);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $conn = dbConnect();
 
-    $dokumentasi = [];
-    while ($row = $result->fetch_assoc()) {
-        $dokumentasi[] = $row;
+    $deskripsi  = htmlspecialchars($data['deskripsi'] ?? '');
+    $bulan      = htmlspecialchars($data['bulan'] ?? ''); // simpan sebagai string
+    $anggaran   = (float)str_replace(['.', ','], '', $data['anggaran'] ?? '0');
+    $realisasi  = (float)str_replace(['.', ','], '', $data['realisasi'] ?? '0');
+    $keterangan = htmlspecialchars($data['keterangan'] ?? '');
+
+    $stmt = $conn->prepare("INSERT INTO tb_anggaran (deskripsi, bulan, anggaran, realisasi, keterangan, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+    $stmt->bind_param("ssdss", $deskripsi, $bulan, $anggaran, $realisasi, $keterangan);
+
+    if ($stmt->execute()) {
+        $id_anggaran = $stmt->insert_id;
+        if (!empty($files['name'][0])) {
+            uploadMultipleDokumentasi($files, $id_anggaran);
+        }
+        return true;
     }
-
-    return $dokumentasi;
+    return false;
 }
 
+// =====================
+// Update Anggaran
+// =====================
+function updateAnggaran($data, $files)
+{
+    $conn = dbConnect();
+    $id         = $data['id_anggaran'];
+    $deskripsi  = htmlspecialchars($data['deskripsi']);
+    $bulan      = htmlspecialchars($data['bulan']);
+    $anggaran   = str_replace(['.', ','], '', $data['anggaran']);
+    $realisasi  = str_replace(['.', ','], '', $data['realisasi']);
+    $keterangan = htmlspecialchars($data['keterangan']);
+
+    $stmt = $conn->prepare("UPDATE tb_anggaran SET deskripsi=?, bulan=?, anggaran=?, realisasi=?, keterangan=? WHERE id_anggaran=?");
+    $stmt->bind_param("ssdssi", $deskripsi, $bulan, $anggaran, $realisasi, $keterangan, $id);
+    if ($stmt->execute()) {
+        if (!empty($files['name'][0])) {
+            uploadMultipleDokumentasi($files, $id);
+        }
+        return true;
+    }
+    return false;
+}
+
+// ==============================
+// Upload Banyak Dokumentasi Foto
+// ==============================
 function uploadMultipleDokumentasi($files, $id_anggaran)
 {
     $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
@@ -71,39 +134,18 @@ function uploadMultipleDokumentasi($files, $id_anggaran)
     $conn->close();
 }
 
-
-function tambahAnggaran($data, $files)
-{
-    $conn = dbConnect();
-    $deskripsi  = htmlspecialchars($data['deskripsi']);
-    $tahun      = htmlspecialchars($data['tahun']);
-    $anggaran   = str_replace('.', '', $data['anggaran']);
-    $realisasi  = str_replace('.', '', $data['realisasi']);
-    $keterangan = htmlspecialchars($data['keterangan']);
-
-    $stmt = $conn->prepare("INSERT INTO tb_anggaran (deskripsi, tahun, anggaran, realisasi, keterangan, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-    $stmt->bind_param("ssdds", $deskripsi, $tahun, $anggaran, $realisasi, $keterangan);
-    if ($stmt->execute()) {
-        $id_anggaran = $stmt->insert_id;
-        if (!empty($files['name'][0])) {
-            uploadMultipleDokumentasi($files, $id_anggaran);
-        }
-        return true;
-    }
-    return false;
-}
-
+// ===================
+// Hapus Anggaran + Foto
+// ===================
 function hapusAnggaran($id)
 {
     $conn = dbConnect();
 
-    // Ambil semua file dokumentasi untuk anggaran ini
     $stmt = $conn->prepare("SELECT file_foto FROM tb_anggaran_dokumentasi WHERE id_anggaran = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    // Hapus file-filenya dari folder
     $uploadDir = '../uploads/anggaran/';
     while ($row = $result->fetch_assoc()) {
         $filePath = $uploadDir . $row['file_foto'];
@@ -112,42 +154,18 @@ function hapusAnggaran($id)
         }
     }
 
-    // Hapus data dokumentasi dari database
     $stmt = $conn->prepare("DELETE FROM tb_anggaran_dokumentasi WHERE id_anggaran = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
 
-    // Hapus data anggaran utama
     $stmt = $conn->prepare("DELETE FROM tb_anggaran WHERE id_anggaran = ?");
     $stmt->bind_param("i", $id);
-    if ($stmt->execute()) {
-        return true;
-    }
-    return false;
+    return $stmt->execute();
 }
 
-function updateAnggaran($data, $files)
-{
-    $conn = dbConnect();
-    $id         = $data['id_anggaran'];
-    $deskripsi  = htmlspecialchars($data['deskripsi']);
-    $tahun      = htmlspecialchars($data['tahun']);
-    $anggaran   = str_replace('.', '', $data['anggaran']);
-    $realisasi  = str_replace('.', '', $data['realisasi']);
-    $keterangan = htmlspecialchars($data['keterangan']);
-
-    $stmt = $conn->prepare("UPDATE tb_anggaran SET deskripsi=?, tahun=?, anggaran=?, realisasi=?, keterangan=? WHERE id_anggaran=?");
-    $stmt->bind_param("ssddsi", $deskripsi, $tahun, $anggaran, $realisasi, $keterangan, $id);
-    if ($stmt->execute()) {
-        if (!empty($files['name'][0])) {
-            uploadMultipleDokumentasi($files, $id);
-        }
-        return true;
-    }
-    return false;
-}
-
-// === HANDLE REQUEST ===
+// ==================
+// Handle POST Request
+// ==================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_anggaran'])) {
         if (tambahAnggaran($_POST, $_FILES['dokumentasi_foto'] ?? [])) {
@@ -166,15 +184,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-}
-
-// Handle hapus data via GET
-if (isset($_GET['hapus'])) {
-    $id = intval($_GET['hapus']);
-    if (hapusAnggaran($id)) {
-        header("Location: ../tambah_anggaran.php?deleted=1");
-    } else {
-        header("Location: ../tambah_anggaran.php?error=1");
-    }
-    exit;
 }

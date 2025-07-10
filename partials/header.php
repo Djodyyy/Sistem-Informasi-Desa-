@@ -88,7 +88,6 @@ $role = $role_names[$role_id] ?? 'unknown';
                             <span> Dashboard </span>
                         </a>
                     </li>
-
                     <?php if ($role === 'admin'): ?>
                         <li class="side-nav-item">
                             <a href="data_user.php" class="side-nav-link">
@@ -134,18 +133,22 @@ $role = $role_names[$role_id] ?? 'unknown';
                                 <i class="uil uil-archive"></i>
                                 <span>Arsip Anggaran</span>
                             </a>
-                             <a href="tambah_pembangunan.php" class="side-nav-link">
+                            <a href="tambah_pembangunan.php" class="side-nav-link">
                                 <i class="uil uil-archive"></i>
                                 <span>Informasi Pembangunan</span>
                             </a>
+                            <a href="tambah_galeri_kegiatan.php" class="side-nav-link">
+                                <i class="uil uil-archive"></i>
+                                <span>Galeri Kegiatan</span>
+                            </a>
                         </li>
-                           <?php elseif ($role === 'kasi_pelayanan'): ?>
+                    <?php elseif ($role === 'kasi_pelayanan'): ?>
                         <li class="side-nav-item">
                             <a href="data_permohonan.php" class="side-nav-link">
                                 <i class="uil-file-info-alt"></i>
                                 <span> Data Permohonan </span>
                             </a>
-                             <a href="kelola_surat.php" class="side-nav-link">
+                            <a href="kelola_surat.php" class="side-nav-link">
                                 <i class="uil-file-info-alt"></i>
                                 <span> Pengelolaan Surat </span>
                             </a>
@@ -153,7 +156,7 @@ $role = $role_names[$role_id] ?? 'unknown';
                                 <i class="uil-file-info-alt"></i>
                                 <span> Data Pengaduan </span>
                             </a>
-                             <a href="jadwal_pelayanan.php" class="side-nav-link">
+                            <a href="jadwal_pelayanan.php" class="side-nav-link">
                                 <i class="uil-file-info-alt"></i>
                                 <span> Jadwal Pelayanan </span>
                             </a>

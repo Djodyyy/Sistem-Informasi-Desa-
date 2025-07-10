@@ -1,9 +1,10 @@
 <?php
 require_once 'koneksi.php';
 
-function getAllPembangunan() {
+function getAllPembangunan()
+{
     $conn = dbConnect();
-    $result = mysqli_query($conn, "SELECT * FROM tb_pembangunan ORDER BY tahun DESC, id DESC");
+    $result = mysqli_query($conn, "SELECT * FROM tb_pembangunan ORDER BY STR_TO_DATE(bulan, '%M %Y') DESC, id DESC");
     $data = [];
     while ($row = mysqli_fetch_assoc($result)) {
         $data[] = $row;
@@ -11,76 +12,86 @@ function getAllPembangunan() {
     return $data;
 }
 
-function tambahPembangunan($data, $file) {
+function tambahPembangunan($data, $file)
+{
     $conn = dbConnect();
 
-    $judul = isset($data['judul']) ? htmlspecialchars($data['judul']) : '';
-    $lokasi = isset($data['lokasi']) ? htmlspecialchars($data['lokasi']) : '';
-    $tahun = isset($data['tahun']) ? htmlspecialchars($data['tahun']) : '';
-    $volume = isset($data['volume']) ? htmlspecialchars($data['volume']) : '';
-    $anggaran = isset($data['anggaran']) ? htmlspecialchars($data['anggaran']) : '';
-    $sumber_dana = isset($data['sumber_dana']) ? htmlspecialchars($data['sumber_dana']) : '';
-    $keterangan = isset($data['keterangan']) ? htmlspecialchars($data['keterangan']) : '';
+    $judul = htmlspecialchars($data['judul'] ?? '');
+    $lokasi = htmlspecialchars($data['lokasi'] ?? '');
+    $bulan = htmlspecialchars($data['bulan'] ?? '');
+    $volume = htmlspecialchars($data['volume'] ?? '');
+    $anggaran = htmlspecialchars($data['anggaran'] ?? '');
+    $sumber_dana = htmlspecialchars($data['sumber_dana'] ?? '');
+    $keterangan = htmlspecialchars($data['keterangan'] ?? '');
 
     // Upload foto
-    $namaFoto = '';
-    if (isset($file['foto']) && $file['foto']['error'] == 0) {
-        $ext = strtolower(pathinfo($file['foto']['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png'];
-        if (in_array($ext, $allowed)) {
-            $namaFoto = 'pembangunan_' . time() . '.' . $ext;
-            move_uploaded_file($file['foto']['tmp_name'], '../uploads/pembangunan/' . $namaFoto);
-        } else {
-            return false; // ekstensi foto tidak diizinkan
+    $fotoArray = [];
+
+    if (isset($file['foto'])) {
+        $totalFiles = count($file['foto']['name']);
+        for ($i = 0; $i < $totalFiles; $i++) {
+            if ($file['foto']['error'][$i] === 0) {
+                $ext = strtolower(pathinfo($file['foto']['name'][$i], PATHINFO_EXTENSION));
+                $allowed = ['jpg', 'jpeg', 'png'];
+                if (in_array($ext, $allowed)) {
+                    $namaFile = 'pembangunan_' . time() . '_' . $i . '.' . $ext;
+                    move_uploaded_file($file['foto']['tmp_name'][$i], '../uploads/pembangunan/' . $namaFile);
+                    $fotoArray[] = $namaFile;
+                }
+            }
         }
     }
 
-    $query = "INSERT INTO tb_pembangunan (judul, lokasi, tahun, volume, anggaran, sumber_dana, keterangan, foto) 
-              VALUES ('$judul', '$lokasi', '$tahun', '$volume', '$anggaran', '$sumber_dana', '$keterangan', '$namaFoto')";
+    $fotoJSON = json_encode($fotoArray);
+
+    $query = "INSERT INTO tb_pembangunan (judul, lokasi, bulan, volume, anggaran, sumber_dana, keterangan, foto, tanggal_upload)
+          VALUES ('$judul', '$lokasi', '$bulan', '$volume', '$anggaran', '$sumber_dana', '$keterangan', '$fotoJSON', NOW())";
+
+
     return mysqli_query($conn, $query);
 }
 
-function editPembangunan($data, $file) {
+function editPembangunan($data, $file)
+{
     $conn = dbConnect();
 
-    $id = isset($data['id']) ? (int)$data['id'] : 0;
-    $judul = isset($data['judul']) ? htmlspecialchars($data['judul']) : '';
-    $lokasi = isset($data['lokasi']) ? htmlspecialchars($data['lokasi']) : '';
-    $tahun = isset($data['tahun']) ? htmlspecialchars($data['tahun']) : '';
-    $volume = isset($data['volume']) ? htmlspecialchars($data['volume']) : '';
-    $anggaran = isset($data['anggaran']) ? htmlspecialchars($data['anggaran']) : '';
-    $sumber_dana = isset($data['sumber_dana']) ? htmlspecialchars($data['sumber_dana']) : '';
-    $keterangan = isset($data['keterangan']) ? htmlspecialchars($data['keterangan']) : '';
+    $id = (int)($data['id'] ?? 0);
+    $judul = htmlspecialchars($data['judul'] ?? '');
+    $lokasi = htmlspecialchars($data['lokasi'] ?? '');
+    $bulan = htmlspecialchars($data['bulan'] ?? '');
+    $volume = htmlspecialchars($data['volume'] ?? '');
+    $anggaran = htmlspecialchars($data['anggaran'] ?? '');
+    $sumber_dana = htmlspecialchars($data['sumber_dana'] ?? '');
+    $keterangan = htmlspecialchars($data['keterangan'] ?? '');
 
     $fotoBaru = '';
-    if (isset($file['foto']) && $file['foto']['error'] == 0) {
+    if (isset($file['foto']) && $file['foto']['error'] === 0) {
         $ext = strtolower(pathinfo($file['foto']['name'], PATHINFO_EXTENSION));
         $allowed = ['jpg', 'jpeg', 'png'];
         if (in_array($ext, $allowed)) {
             $fotoBaru = 'pembangunan_' . time() . '.' . $ext;
             move_uploaded_file($file['foto']['tmp_name'], '../uploads/pembangunan/' . $fotoBaru);
 
-            // Hapus foto lama
             $old = mysqli_query($conn, "SELECT foto FROM tb_pembangunan WHERE id=$id");
             $oldData = mysqli_fetch_assoc($old);
-            if ($oldData['foto'] && file_exists("../uploads/pembangunan/" . $oldData['foto'])) {
+            if (!empty($oldData['foto']) && file_exists("../uploads/pembangunan/" . $oldData['foto'])) {
                 unlink("../uploads/pembangunan/" . $oldData['foto']);
             }
         } else {
-            return false; // ekstensi foto tidak valid
+            return false;
         }
     }
 
     $query = "UPDATE tb_pembangunan SET 
                 judul='$judul', 
                 lokasi='$lokasi', 
-                tahun='$tahun',
+                bulan='$bulan',
                 volume='$volume',
                 anggaran='$anggaran',
                 sumber_dana='$sumber_dana',
                 keterangan='$keterangan'";
 
-    if ($fotoBaru != '') {
+    if (!empty($fotoBaru)) {
         $query .= ", foto='$fotoBaru'";
     }
 
@@ -89,25 +100,44 @@ function editPembangunan($data, $file) {
     return mysqli_query($conn, $query);
 }
 
-function hapusPembangunan($id) {
+function hapusPembangunan($id)
+{
     $conn = dbConnect();
 
     $old = mysqli_query($conn, "SELECT foto FROM tb_pembangunan WHERE id=$id");
     $oldData = mysqli_fetch_assoc($old);
-    if ($oldData['foto'] && file_exists("../uploads/pembangunan/" . $oldData['foto'])) {
+    if (!empty($oldData['foto']) && file_exists("../uploads/pembangunan/" . $oldData['foto'])) {
         unlink("../uploads/pembangunan/" . $oldData['foto']);
     }
 
     return mysqli_query($conn, "DELETE FROM tb_pembangunan WHERE id=$id");
 }
 
-function getPembangunanById($id) {
+function getPembangunanById($id)
+{
     $conn = dbConnect();
-    $result = mysqli_query($conn, "SELECT * FROM tb_pembangunan WHERE id=$id");
-    return mysqli_fetch_assoc($result);
+    $id = (int)$id; // sanitasi biar aman
+    $result = mysqli_query($conn, "SELECT * FROM tb_pembangunan WHERE id = $id");
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        $data = mysqli_fetch_assoc($result);
+
+        // Decode JSON jika ada file foto
+        if (!empty($data['file_foto'])) {
+            $decoded = json_decode($data['file_foto'], true);
+
+            // Cek apakah decode berhasil dan array
+            $data['file_foto'] = is_array($decoded) ? $decoded : [];
+        } else {
+            $data['file_foto'] = [];
+        }
+
+        return $data;
+    }
+
+    return null; // return null kalau data tidak ditemukan
 }
 
-// Handle tambah data
 if (isset($_POST['add_pembangunan'])) {
     $result = tambahPembangunan($_POST, $_FILES);
     if ($result) {
@@ -118,7 +148,6 @@ if (isset($_POST['add_pembangunan'])) {
     exit;
 }
 
-// Handle edit data
 if (isset($_POST['edit_pembangunan'])) {
     $result = editPembangunan($_POST, $_FILES);
     if ($result) {
@@ -129,7 +158,6 @@ if (isset($_POST['edit_pembangunan'])) {
     exit;
 }
 
-// Handle hapus data
 if (isset($_GET['hapus'])) {
     $id = (int)$_GET['hapus'];
     $result = hapusPembangunan($id);

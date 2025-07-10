@@ -42,34 +42,46 @@ if ($result && $result->num_rows > 0) {
   $balita = (int)$row['total_balita'];
 }
 
-//data anggaran
+// Ambil data anggaran
 $query = "
   SELECT 
     a.id_anggaran,
     a.deskripsi,
-    a.tahun,
+    a.bulan,
     a.anggaran,
     a.realisasi,
     a.keterangan,
     GROUP_CONCAT(d.file_foto SEPARATOR ',') AS file_foto
   FROM tb_anggaran a
   LEFT JOIN tb_anggaran_dokumentasi d ON a.id_anggaran = d.id_anggaran
-  GROUP BY a.id_anggaran
-  ORDER BY a.tahun DESC, a.id_anggaran DESC
+  GROUP BY a.id_anggaran, a.deskripsi, a.bulan, a.anggaran, a.realisasi, a.keterangan
+  ORDER BY STR_TO_DATE(a.bulan, '%M %Y') DESC, a.id_anggaran DESC
 ";
-$result = mysqli_query($conn, $query);
 
-//data galeri kegiatan
-function getAllGaleriKegiatan()
-{
-  global $conn;
-  $query = "SELECT * FROM tb_galeri_kegiatan ORDER BY tanggal_upload DESC";
-  $result = mysqli_query($conn, $query);
-  $data = [];
-  while ($row = mysqli_fetch_assoc($result)) {
-    $data[] = $row;
+$resultAnggaran = mysqli_query($conn, $query);
+$dataAnggaran = [];
+
+if ($resultAnggaran) {
+  while ($row = mysqli_fetch_assoc($resultAnggaran)) {
+    $row['file_foto'] = !empty($row['file_foto']) ? explode(',', $row['file_foto']) : [];
+
+    // Ambil tahun dari bulan
+    $tahun = 1970;
+    if (!empty($row['bulan'])) {
+      preg_match('/\b\d{4}\b/', $row['bulan'], $matches);
+      if ($matches) {
+        $tahun = $matches[0];
+      }
+    }
+    $row['tahun'] = $tahun;
+    $dataAnggaran[] = $row;
   }
-  return $data;
+}
+
+// Kelompokkan berdasarkan tahun
+$groupedAnggaran = [];
+foreach ($dataAnggaran as $item) {
+  $groupedAnggaran[$item['tahun']][] = $item;
 }
 
 ?>
@@ -462,11 +474,6 @@ function getAllGaleriKegiatan()
 
           <!-- Transparansi Anggaran Section -->
           <section id="transparansi" class="section bg-light">
-            <div class="container section-title" data-aos="fade-up">
-              <h2>Transparansi Anggaran</h2>
-              <p>Informasi anggaran desa yang dikelola secara terbuka dan akuntabel</p>
-            </div>
-
             <style>
               .circular-chart {
                 width: 60px;
@@ -499,95 +506,99 @@ function getAllGaleriKegiatan()
                 font-size: 0.5em;
                 text-anchor: middle;
               }
-
-              .table-responsive {
-                overflow-x: auto;
-              }
             </style>
 
+            <div class="container section-title" data-aos="fade-up">
+              <h2>Transparansi Anggaran</h2>
+              <p>Informasi anggaran desa yang dikelola secara terbuka dan akuntabel</p>
+            </div>
+
             <div class="container">
-              <div class="table-responsive" data-aos="fade-up" data-aos-delay="100">
-                <table class="table table-bordered align-middle">
-                  <thead class="table-dark text-center">
-                    <tr>
-                      <th>No.</th>
-                      <th>Deskripsi Anggaran</th>
-                      <th>Tahun</th>
-                      <th>Anggaran (Rp)</th>
-                      <th>Realisasi (Rp)</th>
-                      <th>Progres</th>
-                      <th>% Realisasi</th>
-                      <th>Dokumentasi</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php
-                    $no = 1;
-                    while ($row = mysqli_fetch_assoc($result)) {
-                      $anggaran = $row['anggaran'] ?? 0;
-                      $realisasi = $row['realisasi'] ?? 0;
-                      $progres = $anggaran > 0 ? round(($realisasi / $anggaran) * 100) : 0;
-                      $colorClass = ($progres >= 80) ? 'green' : 'orange';
-                      $strokeDash = $progres . ", 100";
-                      $formatAnggaran = number_format($anggaran, 0, ',', '.');
-                      $formatRealisasi = number_format($realisasi, 0, ',', '.');
-
-                      $file_foto = $row['file_foto'] ?? '';
-                      $gambarList = !empty($file_foto) ? array_map('trim', explode(',', $file_foto)) : [];
-
-                      echo "<tr>";
-                      echo "<td class='text-center'>{$no}</td>";
-                      echo "<td>" . htmlspecialchars($row['deskripsi'], ENT_QUOTES) . "</td>";
-                      echo "<td class='text-center'>" . htmlspecialchars($row['tahun'], ENT_QUOTES) . "</td>";
-                      echo "<td class='text-end'>{$formatAnggaran}</td>";
-                      echo "<td class='text-end'>{$formatRealisasi}</td>";
-                      echo "<td class='text-center'>
-              <svg viewBox='0 0 36 36' class='circular-chart {$colorClass}'>
-                <path class='circle-bg' d='M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 
-                  a 15.9155 15.9155 0 0 1 0 -31.831' />
-                <path class='circle' stroke-dasharray='{$strokeDash}' 
-                  d='M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 
-                  a 15.9155 15.9155 0 0 1 0 -31.831' />
-                <text x='18' y='20' class='percentage'>{$progres}%</text>
-              </svg>
-            </td>";
-                      echo "<td class='text-center fw-bold'>{$progres}%</td>";
-
-                      echo "<td class='text-center'>";
-                      if (!empty($gambarList)) {
-                        foreach ($gambarList as $gambar) {
-                          if (!empty($gambar)) {
-                            $gambarEscaped = htmlspecialchars($gambar, ENT_QUOTES);
-                            echo "<img src='uploads/anggaran/{$gambarEscaped}' alt='Dokumentasi' 
-                          width='50' class='img-thumbnail me-1 mb-1'>";
-                          }
-                        }
-                      } else {
-                        echo "<span class='text-muted'>Tidak ada</span>";
-                      }
-                      echo "</td>";
-
-                      echo "<td class='text-center'>
-              <button type='button' class='btn btn-sm btn-primary'
-                data-bs-toggle='modal'
-                data-bs-target='#modalDetail'
-                data-deskripsi='" . htmlspecialchars($row['deskripsi'], ENT_QUOTES) . "'
-                data-tahun='" . htmlspecialchars($row['tahun'], ENT_QUOTES) . "'
-                data-anggaran='{$formatAnggaran}'
-                data-realisasi='{$formatRealisasi}'
-                data-keterangan='" . htmlspecialchars($row['keterangan'], ENT_QUOTES) . "'
-                data-gambar='" . htmlspecialchars($file_foto, ENT_QUOTES) . "'>
-                Detail
-              </button>
-            </td>";
-                      echo "</tr>";
-                      $no++;
-                    }
-                    ?>
-                  </tbody>
-                </table>
-              </div>
+              <?php if (!empty($groupedAnggaran)): ?>
+                <div class="accordion mb-4" id="accordionAnggaran">
+                  <?php $index = 0;
+                  foreach ($groupedAnggaran as $tahun => $anggarans): ?>
+                    <div class="accordion-item">
+                      <h2 class="accordion-header" id="heading<?= $index ?>">
+                        <button class="accordion-button <?= $index > 0 ? 'collapsed' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $index ?>" aria-expanded="<?= $index === 0 ? 'true' : 'false' ?>" aria-controls="collapse<?= $index ?>">
+                          Tahun <?= $tahun ?>
+                        </button>
+                      </h2>
+                      <div id="collapse<?= $index ?>" class="accordion-collapse collapse <?= $index === 0 ? 'show' : '' ?>" aria-labelledby="heading<?= $index ?>" data-bs-parent="#accordionAnggaran">
+                        <div class="accordion-body table-responsive">
+                          <table class="table table-bordered align-middle">
+                            <thead class="table-dark text-center">
+                              <tr>
+                                <th>No.</th>
+                                <th>Deskripsi</th>
+                                <th>Bulan</th>
+                                <th>Anggaran (Rp)</th>
+                                <th>Realisasi (Rp)</th>
+                                <th>Progres</th>
+                                <th>% Realisasi</th>
+                                <th>Dokumentasi</th>
+                                <th>Aksi</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <?php $no = 1;
+                              foreach ($anggarans as $row): ?>
+                                <?php
+                                $anggaran = $row['anggaran'] ?? 0;
+                                $realisasi = $row['realisasi'] ?? 0;
+                                $progres = $anggaran > 0 ? round(($realisasi / $anggaran) * 100) : 0;
+                                $colorClass = ($progres >= 80) ? 'green' : 'orange';
+                                $strokeDash = $progres . ", 100";
+                                $formatAnggaran = number_format($anggaran, 0, ',', '.');
+                                $formatRealisasi = number_format($realisasi, 0, ',', '.');
+                                ?>
+                                <tr>
+                                  <td class="text-center"><?= $no++ ?></td>
+                                  <td><?= htmlspecialchars($row['deskripsi']) ?></td>
+                                  <td class="text-center"><?= htmlspecialchars($row['bulan']) ?></td>
+                                  <td class="text-end">Rp <?= $formatAnggaran ?></td>
+                                  <td class="text-end">Rp <?= $formatRealisasi ?></td>
+                                  <td class="text-center">
+                                    <svg viewBox="0 0 36 36" class="circular-chart <?= $colorClass ?>">
+                                      <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                      <path class="circle" stroke-dasharray="<?= $strokeDash ?>" stroke="currentColor" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                      <text x="18" y="20" class="percentage"><?= $progres ?>%</text>
+                                    </svg>
+                                  </td>
+                                  <td class="text-center fw-bold"><?= $progres ?>%</td>
+                                  <td class="text-center">
+                                    <?php if (!empty($row['file_foto'])): ?>
+                                      <?php foreach ($row['file_foto'] as $gambar): ?>
+                                        <img src="uploads/anggaran/<?= htmlspecialchars($gambar) ?>" width="50" class="img-thumbnail me-1 mb-1" alt="Dokumentasi">
+                                      <?php endforeach; ?>
+                                    <?php else: ?>
+                                      <span class="text-muted">Tidak ada</span>
+                                    <?php endif; ?>
+                                  </td>
+                                  <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalDetail"
+                                      data-deskripsi="<?= htmlspecialchars($row['deskripsi']) ?>"
+                                      data-tahun="<?= htmlspecialchars($row['bulan']) ?>"
+                                      data-anggaran="<?= $formatAnggaran ?>"
+                                      data-realisasi="<?= $formatRealisasi ?>"
+                                      data-keterangan="<?= htmlspecialchars($row['keterangan']) ?>"
+                                      data-gambar="<?= htmlspecialchars(implode(',', $row['file_foto'])) ?>">
+                                      Detail
+                                    </button>
+                                  </td>
+                                </tr>
+                              <?php endforeach; ?>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  <?php $index++;
+                  endforeach; ?>
+                </div>
+              <?php else: ?>
+                <p class="text-center">Belum ada data anggaran tersedia.</p>
+              <?php endif; ?>
             </div>
           </section>
 
@@ -644,6 +655,9 @@ function getAllGaleriKegiatan()
               }
             });
           </script>
+
+
+
 
           <!-- Lokasi Desa Section -->
           <section id="lokasi-desa" class="lokasi-desa section" style="position: relative; background-color: #f8f9fa; padding: 60px 0;">
@@ -734,7 +748,6 @@ function getAllGaleriKegiatan()
 
           <!-- Galeri & Kegiatan Section -->
           <section id="galeri-kegiatan" class="section bg-light">
-
             <div class="container section-title" data-aos="fade-up">
               <h2>Galeri & Kegiatan</h2>
               <p>Dokumentasi kegiatan dan momen penting Desa Cibening</p>
@@ -743,27 +756,39 @@ function getAllGaleriKegiatan()
             <div class="container">
               <div class="row gy-4">
                 <?php
-                include 'functions/function_galeri_kegiatan.php';
-                $listGaleri = getAllGaleriKegiatan();
+                require_once 'functions/function_galeri_kegiatan.php';
+                $listGaleri = getAllKegiatan(); // Sudah include gambar
 
-                if ($listGaleri && count($listGaleri) > 0) {
+                if (!empty($listGaleri)) {
                   $delay = 100;
                   foreach ($listGaleri as $item) {
-                    $id = (int)$item['id'];
-                    $judul = htmlspecialchars($item['judul']);
-                    $deskripsi = htmlspecialchars($item['deskripsi']);
-                    $fileGambar = htmlspecialchars($item['file_foto']);
+                    // Gunakan filter aman
+                    $id         = (int)($item['id'] ?? 0);
+                    $judul      = htmlspecialchars($item['judul'] ?? '', ENT_QUOTES, 'UTF-8');
+                    $deskripsi  = htmlspecialchars($item['deskripsi'] ?? '', ENT_QUOTES, 'UTF-8');
 
-                    // ✅ Path gambar sesuai folder upload
-                    $gambar = !empty($fileGambar) ? 'uploads/galeri/' . $fileGambar : 'assets/img/default-galeri.jpg';
+                    // Ambil gambar pertama (cover) atau fallback
+                    $fileGambar = (!empty($item['file_gambar'][0]))
+                      ? basename($item['file_gambar'][0])
+                      : 'default-galeri.jpg';
 
-                    echo '<div class="col-lg-4 col-md-6" data-aos="zoom-in" data-aos-delay="' . $delay . '">
+                    $cover = 'uploads/galeri/' . $fileGambar;
+
+                    // Validasi ekstensi file untuk keamanan
+                    $allowedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                    $ext = strtolower(pathinfo($cover, PATHINFO_EXTENSION));
+                    if (!in_array($ext, $allowedExt) || !file_exists($cover)) {
+                      $cover = 'assets/img/default-galeri.jpg';
+                    }
+
+                    echo '
+          <div class="col-lg-4 col-md-6" data-aos="zoom-in" data-aos-delay="' . $delay . '">
             <a href="detail_galeri.php?id=' . $id . '" class="text-decoration-none text-dark">
               <div class="card h-100 border-0 shadow-sm">
-                <img src="' . $gambar . '" class="card-img-top" alt="' . $judul . '">
+                <img src="' . htmlspecialchars($cover, ENT_QUOTES, 'UTF-8') . '" class="card-img-top" style="height: 220px; object-fit: cover;" alt="' . $judul . '">
                 <div class="card-body">
                   <h5 class="card-title">' . $judul . '</h5>
-                  <p class="card-text">' . $deskripsi . '</p>
+                  <p class="card-text">' . mb_strimwidth(strip_tags($deskripsi), 0, 120, '...') . '</p>
                 </div>
               </div>
             </a>
@@ -776,9 +801,9 @@ function getAllGaleriKegiatan()
                 ?>
               </div>
             </div>
-
           </section>
           <!-- /Galeri & Kegiatan Section -->
+
           <!-- Contact Dan Pengadun -->
           <section id="contact" class="contact section light-background">
 
@@ -882,7 +907,7 @@ function getAllGaleriKegiatan()
       </div>
 
       <div class="credits">
-        Designed by <a href="#">Djody Rizaldi</a>
+        Designed by <a href="https://github.com/Djodyyy">Djody Rizaldi</a>
       </div>
     </div>
 

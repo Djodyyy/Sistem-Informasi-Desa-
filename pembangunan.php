@@ -89,15 +89,21 @@ $dataPembangunan = getAllPembangunan();
             <?php foreach ($dataPembangunan as $row): ?>
               <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm">
-                  <?php if (!empty($row['foto']) && file_exists('uploads/pembangunan/' . $row['foto'])): ?>
-                    <img src="uploads/pembangunan/<?= htmlspecialchars($row['foto']) ?>" class="card-img-top" style="height: 180px; object-fit: cover;" alt="Foto Pembangunan" />
-                  <?php else: ?>
-                    <img src="assets/img/no-image.png" class="card-img-top" style="height: 180px; object-fit: cover;" alt="No Image" />
-                  <?php endif; ?>
+                  <?php
+                  $fotoUtama = 'assets/img/no-image.png';
+                  if (!empty($row['foto'])) {
+                    $fotoData = json_decode($row['foto'], true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($fotoData) && count($fotoData) > 0) {
+                      $fotoUtama = 'uploads/pembangunan/' . htmlspecialchars($fotoData[0]);
+                    } elseif (is_string($row['foto']) && file_exists('uploads/pembangunan/' . $row['foto'])) {
+                      $fotoUtama = 'uploads/pembangunan/' . htmlspecialchars($row['foto']);
+                    }
+                  }
+                  ?>
+                  <img src="<?= $fotoUtama ?>" class="card-img-top" style="height: 180px; object-fit: cover;" alt="Foto Pembangunan" />
                   <div class="card-body">
                     <h5 class="card-title"><?= htmlspecialchars($row['judul']) ?></h5>
                     <p class="text-muted mb-1"><i class="bi bi-geo-alt"></i> <?= htmlspecialchars($row['lokasi']) ?></p>
-                    <p class="text-muted mb-1"><i class="bi bi-calendar-event"></i> Tahun <?= htmlspecialchars($row['tahun']) ?></p>
                     <p class="card-text"><?= substr(strip_tags($row['keterangan']), 0, 100) ?>...</p>
                     <a href="detail_pembangunan.php?id=<?= htmlspecialchars($row['id']) ?>" class="btn btn-sm btn-baca mt-2">Baca Selengkapnya</a>
                   </div>

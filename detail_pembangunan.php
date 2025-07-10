@@ -30,7 +30,7 @@ $data = getPembangunanById($id);
 
     .pembangunan-img {
       max-height: 400px;
-      object-fit: cover;
+      object-fit: contain;
       width: 100%;
     }
 
@@ -46,6 +46,17 @@ $data = getPembangunanById($id);
     .btn-kembali:hover {
       background-color: #5a6268;
     }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+    }
+
+    .carousel-control-prev,
+    .carousel-control-next {
+      width: 6%;
+    }
   </style>
 </head>
 
@@ -60,7 +71,7 @@ $data = getPembangunanById($id);
             <h2 class="pembangunan-title"><?= htmlspecialchars($data['judul']) ?></h2>
             <p class="text-muted">
               <i class="bi bi-geo-alt"></i> <?= htmlspecialchars($data['lokasi']) ?> &nbsp;|&nbsp;
-              <i class="bi bi-calendar-event"></i> Tahun <?= htmlspecialchars($data['tahun']) ?>
+              <?= htmlspecialchars($data['bulan']) ?>
             </p>
             <p class="text-muted">
               <i class="bi bi-graph-up"></i> Volume: <?= htmlspecialchars($data['volume']) ?> &nbsp;|&nbsp;
@@ -69,8 +80,38 @@ $data = getPembangunanById($id);
             </p>
           </div>
 
-          <?php if (!empty($data['foto'])): ?>
-            <img src="uploads/pembangunan/<?= htmlspecialchars($data['foto']) ?>" class="pembangunan-img mb-4" alt="Foto Pembangunan">
+          <?php
+          $fotoArray = [];
+          if (!empty($data['foto'])) {
+            $decoded = json_decode($data['foto'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+              $fotoArray = $decoded;
+            } else {
+              $fotoArray[] = $data['foto'];
+            }
+          }
+          ?>
+
+          <?php if (count($fotoArray) > 1): ?>
+            <div id="carouselPembangunan" class="carousel slide mb-4" data-bs-ride="carousel">
+              <div class="carousel-inner">
+                <?php foreach ($fotoArray as $index => $foto): ?>
+                  <div class="carousel-item <?= $index === 0 ? 'active' : '' ?>">
+                    <img src="uploads/pembangunan/<?= htmlspecialchars($foto) ?>" class="d-block w-100 pembangunan-img" alt="Foto <?= $index + 1 ?>">
+                  </div>
+                <?php endforeach; ?>
+              </div>
+              <button class="carousel-control-prev" type="button" data-bs-target="#carouselPembangunan" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Sebelumnya</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#carouselPembangunan" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Selanjutnya</span>
+              </button>
+            </div>
+          <?php elseif (count($fotoArray) === 1): ?>
+            <img src="uploads/pembangunan/<?= htmlspecialchars($fotoArray[0]) ?>" class="pembangunan-img mb-4" alt="Foto Pembangunan">
           <?php endif; ?>
 
           <div class="pembangunan-content">
