@@ -92,7 +92,7 @@ foreach ($dataAnggaran as $item) {
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>HOME - PEMERINTAHAN DESA CIBENING</title>
+  <title>HOME - PEMERINTAHAN DESA</title>
   <meta name="description" content="">
   <meta name="keywords" content="">
   <link rel="shortcut icon" href="assets/img/logo/logo_tab.png">
