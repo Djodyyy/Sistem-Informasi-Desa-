@@ -1,6 +1,6 @@
-# 🌐 Website Sistem Informasi Desa Cibening – Kabupaten Purwakarta
+# 🌐 Website Sistem Informasi Desa 
 
-Sistem informasi berbasis web untuk membantu pengelolaan data pemerintahan Desa Cibening. Fitur-fitur utamanya dirancang untuk mendukung transparansi, efisiensi administrasi, dan akses publik terhadap informasi desa.
+Sistem informasi berbasis web untuk membantu pengelolaan data pemerintahan Desa . Fitur-fitur utamanya dirancang untuk mendukung transparansi, efisiensi administrasi, dan akses publik terhadap informasi desa.
 
 ## 📌 Modul Utama
 - ✅ Manajemen data penduduk
