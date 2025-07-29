@@ -4,13 +4,20 @@ class Database
   private static $instance = null;
   private $connection;
 
-  private $host = "localhost";
-  private $username = "root";
-  private $password = "";
-  private $database = "db_cibening";
+  private $host;
+  private $username;
+  private $password;
+  private $database;
 
   private function __construct()
   {
+    $config = require __DIR__ . '/config-db.php';
+
+    $this->host = $config['host'];
+    $this->username = $config['username'];
+    $this->password = $config['password'];
+    $this->database = $config['database'];
+
     try {
       mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
       $this->connection = new mysqli($this->host, $this->username, $this->password, $this->database);
@@ -59,14 +66,12 @@ class Database
     exit;
   }
 
-  // Opsional: query langsung manual
   public function query($sql)
   {
     return $this->connection->query($sql);
   }
 }
 
-// Fungsi global koneksi
 function dbConnect()
 {
   return Database::getInstance();
